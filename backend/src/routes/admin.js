@@ -67,7 +67,7 @@ router.post('/drivers', async (req, res) => {
     const userId = userResult.rows[0].id;
 
     const driverResult = await query(
-      'INSERT INTO drivers (user_id, vehicle_type, plate, license, approved) VALUES (?, ?, ?, ?, 1) RETURNING *',
+      'INSERT INTO drivers (user_id, vehicle_type, plate, license, approved) VALUES (?, ?, ?, ?, true) RETURNING *',
       [userId, vehicle_type || 'sedan', plate, license]
     );
 
@@ -91,7 +91,7 @@ router.post('/drivers', async (req, res) => {
 router.put('/drivers/:id/approve', async (req, res) => {
   try {
     const result = await query(
-      'UPDATE drivers SET approved = 1 WHERE id = ? RETURNING *',
+      'UPDATE drivers SET approved = true WHERE id = ? RETURNING *',
       [req.params.id]
     );
     if (result.rows.length === 0) {
@@ -106,7 +106,7 @@ router.put('/drivers/:id/approve', async (req, res) => {
 router.put('/drivers/:id/reject', async (req, res) => {
   try {
     const result = await query(
-      'UPDATE drivers SET approved = 0 WHERE id = ? RETURNING *',
+      'UPDATE drivers SET approved = false WHERE id = ? RETURNING *',
       [req.params.id]
     );
     if (result.rows.length === 0) {
@@ -163,7 +163,7 @@ router.get('/reports/daily', async (req, res) => {
 router.get('/stats', async (req, res) => {
   try {
     const rides = await query(`SELECT COUNT(*) as total, COALESCE(SUM(fare_final), 0) as revenue FROM rides WHERE status = 'completed'`);
-    const drivers = await query(`SELECT COUNT(*) as total, COUNT(CASE WHEN status = 'available' THEN 1 END) as available FROM drivers WHERE approved = 1`);
+    const drivers = await query(`SELECT COUNT(*) as total, COUNT(CASE WHEN status = 'available' THEN 1 END) as available FROM drivers WHERE approved = true`);
     const active = await query(`SELECT COUNT(*) as active FROM rides WHERE status IN ('pending', 'accepted', 'in_progress')`);
     
     res.json({
