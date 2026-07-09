@@ -5,7 +5,7 @@
   },
   "deploy": {
     "startCommand": "npm run db:migrate && npm run db:seed && npm start",
-    "healthcheckPath": "/",
+    "healthcheckPath": "/api/health",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
   }
