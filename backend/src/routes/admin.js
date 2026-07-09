@@ -28,7 +28,7 @@ router.get('/rides', async (req, res) => {
     sql += ` ORDER BY r.created_at DESC LIMIT ?`;
     params.push(limit);
 
-    const result = query(sql, params);
+    const result = await query(sql, params);
     res.json(result.rows);
   } catch (error) {
     res.status(500).json({ error: 'Error al obtener viajes' });
@@ -37,7 +37,7 @@ router.get('/rides', async (req, res) => {
 
 router.get('/drivers', async (req, res) => {
   try {
-    const result = query(
+    const result = await query(
       `SELECT d.*, u.name, u.email, u.phone
        FROM drivers d
        JOIN users u ON d.user_id = u.id
@@ -53,20 +53,20 @@ router.post('/drivers', async (req, res) => {
   try {
     const { name, email, phone, password, plate, license, vehicle_type } = req.body;
 
-    const existing = query('SELECT id FROM users WHERE email = ?', [email]);
+    const existing = await query('SELECT id FROM users WHERE email = ?', [email]);
     if (existing.rows.length > 0) {
       return res.status(400).json({ error: 'Email ya registrado' });
     }
 
     const password_hash = await bcrypt.hash(password, 10);
-    const userResult = query(
+    const userResult = await query(
       'INSERT INTO users (name, email, phone, password_hash, role) VALUES (?, ?, ?, ?, ?) RETURNING id',
       [name, email, phone, password_hash, 'driver']
     );
 
     const userId = userResult.rows[0].id;
 
-    const driverResult = query(
+    const driverResult = await query(
       'INSERT INTO drivers (user_id, vehicle_type, plate, license, approved) VALUES (?, ?, ?, ?, 1) RETURNING *',
       [userId, vehicle_type || 'sedan', plate, license]
     );
@@ -90,7 +90,7 @@ router.post('/drivers', async (req, res) => {
 
 router.put('/drivers/:id/approve', async (req, res) => {
   try {
-    const result = query(
+    const result = await query(
       'UPDATE drivers SET approved = 1 WHERE id = ? RETURNING *',
       [req.params.id]
     );
@@ -105,7 +105,7 @@ router.put('/drivers/:id/approve', async (req, res) => {
 
 router.put('/drivers/:id/reject', async (req, res) => {
   try {
-    const result = query(
+    const result = await query(
       'UPDATE drivers SET approved = 0 WHERE id = ? RETURNING *',
       [req.params.id]
     );
@@ -121,7 +121,7 @@ router.put('/drivers/:id/reject', async (req, res) => {
 router.put('/pricing', async (req, res) => {
   try {
     const { base_fare, per_km, per_minute, minimum_fare } = req.body;
-    const result = query(
+    const result = await query(
       `UPDATE pricing SET 
         base_fare = COALESCE(?, base_fare),
         per_km = COALESCE(?, per_km),
@@ -140,7 +140,7 @@ router.put('/pricing', async (req, res) => {
 
 router.get('/reports/daily', async (req, res) => {
   try {
-    const result = query(
+    const result = await query(
       `SELECT 
          DATE(completed_at) as date,
          COUNT(*) as total_rides,
@@ -162,9 +162,9 @@ router.get('/reports/daily', async (req, res) => {
 
 router.get('/stats', async (req, res) => {
   try {
-    const rides = query(`SELECT COUNT(*) as total, COALESCE(SUM(fare_final), 0) as revenue FROM rides WHERE status = 'completed'`);
-    const drivers = query(`SELECT COUNT(*) as total, COUNT(CASE WHEN status = 'available' THEN 1 END) as available FROM drivers WHERE approved = 1`);
-    const active = query(`SELECT COUNT(*) as active FROM rides WHERE status IN ('pending', 'accepted', 'in_progress')`);
+    const rides = await query(`SELECT COUNT(*) as total, COALESCE(SUM(fare_final), 0) as revenue FROM rides WHERE status = 'completed'`);
+    const drivers = await query(`SELECT COUNT(*) as total, COUNT(CASE WHEN status = 'available' THEN 1 END) as available FROM drivers WHERE approved = 1`);
+    const active = await query(`SELECT COUNT(*) as active FROM rides WHERE status IN ('pending', 'accepted', 'in_progress')`);
     
     res.json({
       rides: rides.rows[0],

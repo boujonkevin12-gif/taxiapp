@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.get('/pricing', async (req, res) => {
   try {
-    const result = query('SELECT * FROM pricing ORDER BY id DESC LIMIT 1');
+    const result = await query('SELECT * FROM pricing ORDER BY id DESC LIMIT 1');
     res.json(result.rows[0] || { base_fare: 500, per_km: 150, per_minute: 25, minimum_fare: 1000 });
   } catch (error) {
     res.status(500).json({ error: 'Error al obtener tarifas' });
@@ -17,7 +17,7 @@ router.post('/estimate', async (req, res) => {
   try {
     const { pickup_lat, pickup_lng, dropoff_lat, dropoff_lng } = req.body;
     
-    const pricing = query('SELECT * FROM pricing ORDER BY id DESC LIMIT 1');
+    const pricing = await query('SELECT * FROM pricing ORDER BY id DESC LIMIT 1');
     const p = pricing.rows[0] || { base_fare: 500, per_km: 150, per_minute: 25, minimum_fare: 1000 };
 
     const R = 6371;
@@ -49,7 +49,7 @@ router.post('/rides', auth, async (req, res) => {
   try {
     const { pickup_lat, pickup_lng, pickup_address, dropoff_lat, dropoff_lng, dropoff_address, fare_estimate, payment_method } = req.body;
 
-    const result = query(
+    const result = await query(
       `INSERT INTO rides (passenger_id, pickup_lat, pickup_lng, pickup_address, dropoff_lat, dropoff_lng, dropoff_address, fare_estimate, payment_method, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending') RETURNING *`,
       [req.user.id, pickup_lat, pickup_lng, pickup_address, dropoff_lat, dropoff_lng, dropoff_address, fare_estimate, payment_method || 'cash']
@@ -71,7 +71,7 @@ router.post('/rides', auth, async (req, res) => {
 
 router.get('/rides/:id', auth, async (req, res) => {
   try {
-    const result = query(
+    const result = await query(
       `SELECT r.*, u.name as driver_name, d.plate, d.vehicle_type
        FROM rides r
        LEFT JOIN drivers d ON r.driver_id = d.id
@@ -90,7 +90,7 @@ router.get('/rides/:id', auth, async (req, res) => {
 
 router.post('/rides/:id/cancel', auth, async (req, res) => {
   try {
-    const result = query(
+    const result = await query(
       `UPDATE rides SET status = 'cancelled' WHERE id = ? AND passenger_id = ? AND status IN ('pending', 'accepted') RETURNING *`,
       [req.params.id, req.user.id]
     );
@@ -112,7 +112,7 @@ router.post('/rides/:id/cancel', auth, async (req, res) => {
 router.post('/rides/:id/rate', auth, async (req, res) => {
   try {
     const { rating, comment } = req.body;
-    const result = query(
+    const result = await query(
       `UPDATE rides SET rating = ?, rating_comment = ? WHERE id = ? AND passenger_id = ? AND status = 'completed' RETURNING *`,
       [rating, comment, req.params.id, req.user.id]
     );
@@ -127,7 +127,7 @@ router.post('/rides/:id/rate', auth, async (req, res) => {
 
 router.get('/rides', auth, async (req, res) => {
   try {
-    const result = query(
+    const result = await query(
       `SELECT r.*, u.name as driver_name FROM rides r
        LEFT JOIN drivers d ON r.driver_id = d.id
        LEFT JOIN users u ON d.user_id = u.id

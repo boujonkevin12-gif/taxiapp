@@ -10,13 +10,13 @@ router.post('/register', async (req, res) => {
   try {
     const { name, email, phone, password } = req.body;
     
-    const existing = query('SELECT id FROM users WHERE email = ?', [email]);
+    const existing = await query('SELECT id FROM users WHERE email = ?', [email]);
     if (existing.rows.length > 0) {
       return res.status(400).json({ error: 'Email ya registrado' });
     }
 
     const password_hash = await bcrypt.hash(password, 10);
-    const result = query(
+    const result = await query(
       'INSERT INTO users (name, email, phone, password_hash) VALUES (?, ?, ?, ?) RETURNING id, name, email, phone, role',
       [name, email, phone, password_hash]
     );
@@ -39,7 +39,7 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    const result = query('SELECT * FROM users WHERE email = ?', [email]);
+    const result = await query('SELECT * FROM users WHERE email = ?', [email]);
     if (result.rows.length === 0) {
       return res.status(401).json({ error: 'Credenciales inválidas' });
     }
@@ -68,7 +68,7 @@ router.post('/login', async (req, res) => {
 
 router.get('/me', auth, async (req, res) => {
   try {
-    const result = query(
+    const result = await query(
       'SELECT id, name, email, phone, role FROM users WHERE id = ?',
       [req.user.id]
     );

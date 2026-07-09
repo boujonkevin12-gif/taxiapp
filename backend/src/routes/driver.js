@@ -7,7 +7,7 @@ const router = express.Router();
 router.put('/location', auth, isDriver, async (req, res) => {
   try {
     const { lat, lng } = req.body;
-    query(
+    await query(
       'UPDATE drivers SET current_lat = ?, current_lng = ? WHERE user_id = ?',
       [lat, lng, req.user.id]
     );
@@ -23,7 +23,7 @@ router.put('/status', auth, isDriver, async (req, res) => {
     if (!['available', 'offline'].includes(status)) {
       return res.status(400).json({ error: 'Estado inválido' });
     }
-    const result = query(
+    const result = await query(
       'UPDATE drivers SET status = ? WHERE user_id = ? RETURNING *',
       [status, req.user.id]
     );
@@ -35,7 +35,7 @@ router.put('/status', auth, isDriver, async (req, res) => {
 
 router.get('/rides/pending', auth, isDriver, async (req, res) => {
   try {
-    const result = query(
+    const result = await query(
       `SELECT r.*, u.name as passenger_name, u.phone as passenger_phone
        FROM rides r
        JOIN users u ON r.passenger_id = u.id
@@ -50,12 +50,12 @@ router.get('/rides/pending', auth, isDriver, async (req, res) => {
 
 router.post('/rides/:id/accept', auth, isDriver, async (req, res) => {
   try {
-    const driver = query('SELECT id FROM drivers WHERE user_id = ?', [req.user.id]);
+    const driver = await query('SELECT id FROM drivers WHERE user_id = ?', [req.user.id]);
     if (driver.rows.length === 0) {
       return res.status(404).json({ error: 'Conductor no encontrado' });
     }
 
-    const result = query(
+    const result = await query(
       `UPDATE rides SET driver_id = ?, status = 'accepted' 
        WHERE id = ? AND status = 'pending' RETURNING *`,
       [driver.rows[0].id, req.params.id]
@@ -65,7 +65,7 @@ router.post('/rides/:id/accept', auth, isDriver, async (req, res) => {
       return res.status(400).json({ error: 'Viaje no disponible' });
     }
 
-    query('UPDATE drivers SET status = ? WHERE id = ?', ['busy', driver.rows[0].id]);
+    await query('UPDATE drivers SET status = ? WHERE id = ?', ['busy', driver.rows[0].id]);
 
     const io = req.app.get('io');
     if (io) {
@@ -80,8 +80,8 @@ router.post('/rides/:id/accept', auth, isDriver, async (req, res) => {
 
 router.post('/rides/:id/start', auth, isDriver, async (req, res) => {
   try {
-    const driver = query('SELECT id FROM drivers WHERE user_id = ?', [req.user.id]);
-    const result = query(
+    const driver = await query('SELECT id FROM drivers WHERE user_id = ?', [req.user.id]);
+    const result = await query(
       `UPDATE rides SET status = 'in_progress' 
        WHERE id = ? AND driver_id = ? AND status = 'accepted' RETURNING *`,
       [req.params.id, driver.rows[0].id]
@@ -98,9 +98,9 @@ router.post('/rides/:id/start', auth, isDriver, async (req, res) => {
 router.post('/rides/:id/complete', auth, isDriver, async (req, res) => {
   try {
     const { fare_final } = req.body;
-    const driver = query('SELECT id FROM drivers WHERE user_id = ?', [req.user.id]);
+    const driver = await query('SELECT id FROM drivers WHERE user_id = ?', [req.user.id]);
     
-    const result = query(
+    const result = await query(
       `UPDATE rides SET status = 'completed', fare_final = ?, completed_at = CURRENT_TIMESTAMP
        WHERE id = ? AND driver_id = ? AND status = 'in_progress' RETURNING *`,
       [fare_final, req.params.id, driver.rows[0].id]
@@ -110,15 +110,15 @@ router.post('/rides/:id/complete', auth, isDriver, async (req, res) => {
       return res.status(400).json({ error: 'No se puede completar este viaje' });
     }
 
-    query('UPDATE drivers SET status = ? WHERE id = ?', ['available', driver.rows[0].id]);
+    await query('UPDATE drivers SET status = ? WHERE id = ?', ['available', driver.rows[0].id]);
 
     if (result.rows[0].payment_method === 'mercadopago_transfer') {
-      query(
+      await query(
         'INSERT INTO payments (ride_id, amount, method, status) VALUES (?, ?, ?, ?)',
         [result.rows[0].id, fare_final, 'mercadopago_transfer', 'pending']
       );
     } else {
-      query(
+      await query(
         'INSERT INTO payments (ride_id, amount, method, status) VALUES (?, ?, ?, ?)',
         [result.rows[0].id, fare_final, 'cash', 'completed']
       );
@@ -137,8 +137,8 @@ router.post('/rides/:id/complete', auth, isDriver, async (req, res) => {
 
 router.get('/earnings', auth, isDriver, async (req, res) => {
   try {
-    const driver = query('SELECT id FROM drivers WHERE user_id = ?', [req.user.id]);
-    const result = query(
+    const driver = await query('SELECT id FROM drivers WHERE user_id = ?', [req.user.id]);
+    const result = await query(
       `SELECT 
          COUNT(*) as total_rides,
          COALESCE(SUM(fare_final), 0) as total_earnings,
