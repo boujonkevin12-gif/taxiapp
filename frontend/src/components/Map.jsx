@@ -1,0 +1,111 @@
+import { useEffect, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+
+const defaultIcon = L.icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const driverIcon = L.divIcon({
+  html: `<div style="background: #2563eb; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;">
+    <span style="color: white; font-size: 14px;">🚗</span>
+  </div>`,
+  className: '',
+  iconSize: [30, 30],
+  iconAnchor: [15, 15]
+});
+
+const pickupIcon = L.divIcon({
+  html: `<div style="background: #22c55e; width: 25px; height: 25px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+  className: '',
+  iconSize: [25, 25],
+  iconAnchor: [12, 12]
+});
+
+const dropoffIcon = L.divIcon({
+  html: `<div style="background: #ef4444; width: 25px; height: 25px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+  className: '',
+  iconSize: [25, 25],
+  iconAnchor: [12, 12]
+});
+
+function MapUpdater({ center, zoom }) {
+  const map = useMap();
+  useEffect(() => {
+    if (center) {
+      map.setView(center, zoom || 15);
+    }
+  }, [center, zoom, map]);
+  return null;
+}
+
+export default function Map({
+  center = [-31.8, -58.23],
+  zoom = 14,
+  pickup = null,
+  dropoff = null,
+  driverLocation = null,
+  className = '',
+  onMapClick = null
+}) {
+  const mapRef = useRef(null);
+
+  const MapClickHandler = () => {
+    const map = useMap();
+    useEffect(() => {
+      if (onMapClick) {
+        map.on('click', (e) => {
+          onMapClick(e.latlng);
+        });
+      }
+      return () => map.off('click');
+    }, [map, onMapClick]);
+    return null;
+  };
+
+  return (
+    <div className={`relative ${className}`}>
+      <MapContainer
+        center={center}
+        zoom={zoom}
+        className="h-full w-full"
+        ref={mapRef}
+        zoomControl={false}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        <MapUpdater center={center} zoom={zoom} />
+        <MapClickHandler />
+        
+        {pickup && (
+          <Marker position={[pickup.lat, pickup.lng]} icon={pickupIcon}>
+            <Popup>Pickup</Popup>
+          </Marker>
+        )}
+        
+        {dropoff && (
+          <Marker position={[dropoff.lat, dropoff.lng]} icon={dropoffIcon}>
+            <Popup>Destino</Popup>
+          </Marker>
+        )}
+        
+        {driverLocation && (
+          <Marker 
+            position={[driverLocation.lat, driverLocation.lng]} 
+            icon={driverIcon}
+          >
+            <Popup>Tu conductor</Popup>
+          </Marker>
+        )}
+      </MapContainer>
+    </div>
+  );
+}
