@@ -2,7 +2,7 @@ services:
   - type: web
     name: taxi-app-backend
     env: node
-    plan: free
+    plan: starter
     buildCommand: cd backend && npm install
     startCommand: cd backend && npm run db:migrate && npm run db:seed && npm start
     envVars:
@@ -20,7 +20,7 @@ services:
   - type: web
     name: taxi-app-frontend
     env: static
-    plan: free
+    plan: starter
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: frontend/dist
     envVars:
@@ -29,5 +29,5 @@ services:
 
 databases:
   - name: taxi-app-db
-    plan: free
+    plan: starter
     databaseName: taxi_app
