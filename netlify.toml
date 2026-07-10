@@ -5,6 +5,7 @@
 
 [build.environment]
   VITE_API_URL = "https://taxiapp-production-8559.up.railway.app"
+  VITE_GEOAPIFY_KEY = "89bd19294b5b4b1687157be957e39e96"
 
 [[redirects]]
   from = "/*"

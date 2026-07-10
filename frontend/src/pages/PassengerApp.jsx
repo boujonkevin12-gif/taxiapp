@@ -4,7 +4,10 @@ import { api } from '../services/api';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 
+const GEO_KEY = import.meta.env.VITE_GEOAPIFY_KEY;
+
 function cleanAddress(r) {
+  if (r.formatted) return r.formatted;
   const addr = r.address || {};
   const road = addr.road || addr.pedestrian || addr.cycleway || '';
   const number = addr.house_number || '';
@@ -15,35 +18,47 @@ function cleanAddress(r) {
   if (street) parts.push(street);
   if (suburb && !street.toLowerCase().includes(suburb.toLowerCase())) parts.push(suburb);
   if (city) parts.push(city);
-  return parts.join(', ') || r.display_name;
+  return parts.join(', ') || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 }
 
 async function geocode(query) {
-  if (!query || query.length < 3) return [];
+  if (!query || query.length < 3 || !GEO_KEY) return [];
   const params = new URLSearchParams({
-    format: 'json',
+    text: query,
+    apiKey: GEO_KEY,
     limit: '8',
-    countrycodes: 'ar',
-    viewboxlbrt: '-58.40,-32.55,-58.10,-32.38',
-    bounded: '1',
-    addressdetails: '1',
+    country: 'argentina',
+    bias: 'proximity:-58.2322,-32.4826',
+    format: 'json',
   });
-  const streetQ = query.replace(/ y /gi, '&').replace(/ e /gi, '&');
-  params.set('q', `${streetQ}, Concepción del Uruguay, Entre Ríos`);
-  const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`);
-  const data = await res.json();
-  return data.map(r => ({
-    lat: parseFloat(r.lat),
-    lng: parseFloat(r.lon),
-    display: cleanAddress(r),
-  }));
+  try {
+    const res = await fetch(`https://api.geoapify.com/v1/geocode/search?${params}`);
+    const data = await res.json();
+    return (data.results || []).map(r => ({
+      lat: r.lat,
+      lng: r.lon,
+      display: r.formatted || r.address_line1 || `${r.lat}, ${r.lon}`,
+    }));
+  } catch {
+    return [];
+  }
 }
 
 async function reverseGeocode(lat, lng) {
+  if (!GEO_KEY) return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  const params = new URLSearchParams({
+    lat: lat.toString(),
+    lon: lng.toString(),
+    apiKey: GEO_KEY,
+    format: 'json',
+  });
   try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`);
+    const res = await fetch(`https://api.geoapify.com/v1/geocode/reverse?${params}`);
     const data = await res.json();
-    return cleanAddress(data) || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    if (data.results && data.results[0]) {
+      return data.results[0].formatted || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    }
+    return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
   } catch {
     return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
   }
