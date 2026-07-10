@@ -4,17 +4,38 @@ import { api } from '../services/api';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 
+function cleanAddress(r) {
+  const addr = r.address || {};
+  const road = addr.road || addr.pedestrian || addr.cycleway || '';
+  const number = addr.house_number || '';
+  const suburb = addr.suburb || addr.city_district || addr.neighbourhood || '';
+  const city = addr.city || addr.town || addr.municipality || '';
+  const street = [road, number].filter(Boolean).join(' ');
+  const parts = [];
+  if (street) parts.push(street);
+  if (suburb && !street.toLowerCase().includes(suburb.toLowerCase())) parts.push(suburb);
+  if (city) parts.push(city);
+  return parts.join(', ') || r.display_name;
+}
+
 async function geocode(query) {
   if (!query || query.length < 3) return [];
-  const q = `${query}, Concepción del Uruguay, Entre Ríos`;
-  const res = await fetch(
-    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&countrycodes=ar&viewboxlbrt=-58.40,-32.55,-58.10,-32.38&bounded=0`
-  );
+  const params = new URLSearchParams({
+    format: 'json',
+    limit: '8',
+    countrycodes: 'ar',
+    viewboxlbrt: '-58.40,-32.55,-58.10,-32.38',
+    bounded: '1',
+    addressdetails: '1',
+  });
+  const streetQ = query.replace(/ y /gi, '&').replace(/ e /gi, '&');
+  params.set('q', `${streetQ}, Concepción del Uruguay, Entre Ríos`);
+  const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`);
   const data = await res.json();
   return data.map(r => ({
     lat: parseFloat(r.lat),
     lng: parseFloat(r.lon),
-    display: r.display_name
+    display: cleanAddress(r),
   }));
 }
 
@@ -22,7 +43,7 @@ async function reverseGeocode(lat, lng) {
   try {
     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`);
     const data = await res.json();
-    return data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    return cleanAddress(data) || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
   } catch {
     return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
   }
