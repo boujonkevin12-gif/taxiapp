@@ -6,7 +6,10 @@ import { useAuth } from '../context/AuthContext';
 
 async function geocode(query) {
   if (!query || query.length < 3) return [];
-  const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&countrycodes=ar`);
+  const q = `${query}, Concepción del Uruguay, Entre Ríos`;
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&countrycodes=ar&viewboxlbrt=-58.40,-32.55,-58.10,-32.38&bounded=0`
+  );
   const data = await res.json();
   return data.map(r => ({
     lat: parseFloat(r.lat),
