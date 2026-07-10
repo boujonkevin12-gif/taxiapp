@@ -39,10 +39,8 @@ export default function DriverApp() {
   useEffect(() => {
     if (!socket) return;
     const onNewRide = (ride) => {
-      console.log('new_ride recibido:', ride, 'available:', isAvailableRef.current, 'activeRide:', activeRideRef.current);
-      if (isAvailableRef.current && !activeRideRef.current) {
-        setPendingRides(prev => [ride, ...prev]);
-      }
+      console.log('new_ride recibido:', ride);
+      setPendingRides(prev => [ride, ...prev]);
     };
     const onRideUpdate = (data) => {
       if (activeRideRef.current && data.rideId === activeRideRef.current.id) {
@@ -148,7 +146,7 @@ export default function DriverApp() {
           </button>
         </div>
 
-        {pendingRides.length > 0 && !activeRide && (
+        {isAvailable && pendingRides.length > 0 && !activeRide && (
           <div className="absolute bottom-0 left-0 right-0 bg-white p-4 rounded-t-2xl shadow-lg max-h-[40vh] overflow-y-auto z-10">
             <h3 className="font-bold text-lg mb-3">Solicitudes pendientes ({pendingRides.length})</h3>
             {pendingRides.map((ride) => (
