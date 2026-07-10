@@ -67,12 +67,15 @@ router.post('/rides/:id/accept', auth, isDriver, async (req, res) => {
 
     await query('UPDATE drivers SET status = ? WHERE id = ?', ['busy', driver.rows[0].id]);
 
+    const ride = result.rows[0];
     const io = req.app.get('io');
     if (io) {
-      io.emit('ride_accepted', { ride: result.rows[0], driver_id: req.user.id });
+      const payload = { rideId: ride.id, status: 'accepted', ...ride };
+      io.to(`ride_${ride.id}`).emit('ride_status_update', payload);
+      io.emit('ride_update_global', payload);
     }
 
-    res.json(result.rows[0]);
+    res.json(ride);
   } catch (error) {
     res.status(500).json({ error: 'Error al aceptar viaje' });
   }
@@ -89,7 +92,16 @@ router.post('/rides/:id/start', auth, isDriver, async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(400).json({ error: 'No se puede iniciar este viaje' });
     }
-    res.json(result.rows[0]);
+
+    const ride = result.rows[0];
+    const io = req.app.get('io');
+    if (io) {
+      const payload = { rideId: ride.id, status: 'in_progress', ...ride };
+      io.to(`ride_${ride.id}`).emit('ride_status_update', payload);
+      io.emit('ride_update_global', payload);
+    }
+
+    res.json(ride);
   } catch (error) {
     res.status(500).json({ error: 'Error al iniciar viaje' });
   }
@@ -124,12 +136,15 @@ router.post('/rides/:id/complete', auth, isDriver, async (req, res) => {
       );
     }
 
+    const ride = result.rows[0];
     const io = req.app.get('io');
     if (io) {
-      io.emit('ride_completed', { ride: result.rows[0] });
+      const payload = { rideId: ride.id, status: 'completed', ...ride };
+      io.to(`ride_${ride.id}`).emit('ride_status_update', payload);
+      io.emit('ride_update_global', payload);
     }
 
-    res.json(result.rows[0]);
+    res.json(ride);
   } catch (error) {
     res.status(500).json({ error: 'Error al completar viaje' });
   }

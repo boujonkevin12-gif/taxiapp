@@ -48,13 +48,18 @@ export default function DriverApp() {
           setActiveRide(null);
           alert('El pasajero canceló el viaje');
         }
+        if (data.status === 'completed') {
+          setActiveRide(null);
+        }
       }
     };
     socket.on('new_ride', onNewRide);
     socket.on('ride_update_global', onRideUpdate);
+    socket.on('ride_status_update', onRideUpdate);
     return () => {
       socket.off('new_ride', onNewRide);
       socket.off('ride_update_global', onRideUpdate);
+      socket.off('ride_status_update', onRideUpdate);
     };
   }, [socket]);
 
@@ -74,6 +79,7 @@ export default function DriverApp() {
   const acceptRide = async (ride) => {
     try {
       await api.driver.acceptRide(ride.id);
+      socket?.emit('driver_track_ride', { rideId: ride.id });
       setActiveRide(ride);
       setPendingRides([]);
     } catch (err) {
@@ -138,11 +144,11 @@ export default function DriverApp() {
             onClick={toggleAvailability}
             className={`w-full py-3 rounded-xl font-semibold shadow-lg transition ${
               isAvailable
-                ? 'bg-red-500 text-white hover:bg-red-600'
-                : 'bg-green-500 text-white hover:bg-green-600'
+                ? 'bg-green-500 text-white hover:bg-green-600'
+                : 'bg-red-500 text-white hover:bg-red-600'
             }`}
           >
-            {isAvailable ? '🔴 No disponible' : '🟢 Disponible para viajes'}
+            {isAvailable ? '🟢 Disponible' : '🔴 No disponible'}
           </button>
         </div>
 

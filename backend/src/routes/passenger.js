@@ -98,9 +98,16 @@ router.post('/rides/:id/cancel', auth, async (req, res) => {
       return res.status(404).json({ error: 'No se puede cancelar este viaje' });
     }
 
+    const ride = result.rows[0];
     const io = req.app.get('io');
     if (io) {
-      io.emit('ride_cancelled', { ride_id: result.rows[0].id });
+      const payload = { rideId: ride.id, status: 'cancelled', ...ride };
+      io.to(`ride_${ride.id}`).emit('ride_status_update', payload);
+      io.emit('ride_update_global', payload);
+    }
+
+    if (ride.driver_id) {
+      await query('UPDATE drivers SET status = ? WHERE id = ?', ['available', ride.driver_id]);
     }
 
     res.json(result.rows[0]);
