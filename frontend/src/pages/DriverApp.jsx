@@ -39,6 +39,7 @@ export default function DriverApp() {
   useEffect(() => {
     if (!socket) return;
     const onNewRide = (ride) => {
+      console.log('new_ride recibido:', ride, 'available:', isAvailableRef.current, 'activeRide:', activeRideRef.current);
       if (isAvailableRef.current && !activeRideRef.current) {
         setPendingRides(prev => [ride, ...prev]);
       }
