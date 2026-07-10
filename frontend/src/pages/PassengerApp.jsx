@@ -1,8 +1,19 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Map from '../components/Map';
 import { api } from '../services/api';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
+
+async function geocode(query) {
+  if (!query || query.length < 3) return [];
+  const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&countrycodes=ar`);
+  const data = await res.json();
+  return data.map(r => ({
+    lat: parseFloat(r.lat),
+    lng: parseFloat(r.lon),
+    display: r.display_name
+  }));
+}
 
 export default function PassengerApp() {
   const { user, logout } = useAuth();
@@ -20,6 +31,13 @@ export default function PassengerApp() {
   const [showHistory, setShowHistory] = useState(false);
   const [rating, setRating] = useState(5);
   const [currentLocation, setCurrentLocation] = useState([-31.8023, -58.2316]);
+  const [pickupSearch, setPickupSearch] = useState('');
+  const [dropoffSearch, setDropoffSearch] = useState('');
+  const [pickupResults, setPickupResults] = useState([]);
+  const [dropoffResults, setDropoffResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const pickupTimeout = useRef(null);
+  const dropoffTimeout = useRef(null);
 
   useEffect(() => {
     navigator.geolocation?.getCurrentPosition(
@@ -53,14 +71,54 @@ export default function PassengerApp() {
     }
   }, [socket, currentRide]);
 
+  const doGeocode = async (query, setResults) => {
+    if (query.length < 3) { setResults([]); return; }
+    setSearching(true);
+    try {
+      const results = await geocode(query);
+      setResults(results);
+    } catch { setResults([]); }
+    setSearching(false);
+  };
+
+  const onPickupSearch = (val) => {
+    setPickupSearch(val);
+    clearTimeout(pickupTimeout.current);
+    pickupTimeout.current = setTimeout(() => doGeocode(val, setPickupResults), 400);
+  };
+
+  const onDropoffSearch = (val) => {
+    setDropoffSearch(val);
+    clearTimeout(dropoffTimeout.current);
+    dropoffTimeout.current = setTimeout(() => doGeocode(val, setDropoffResults), 400);
+  };
+
+  const selectPickup = (result) => {
+    setPickup({ lat: result.lat, lng: result.lng });
+    setPickupAddress(result.display);
+    setPickupSearch(result.display);
+    setPickupResults([]);
+    setStep('select_dropoff');
+  };
+
+  const selectDropoff = (result) => {
+    setDropoff({ lat: result.lat, lng: result.lng });
+    setDropoffAddress(result.display);
+    setDropoffSearch(result.display);
+    setDropoffResults([]);
+    setStep('confirm');
+  };
+
   const handleMapClick = useCallback((latlng) => {
     if (step === 'select_pickup') {
       setPickup({ lat: latlng.lat, lng: latlng.lng });
       setPickupAddress(`${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`);
+      setPickupSearch(`${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`);
       setStep('select_dropoff');
     } else if (step === 'select_dropoff') {
       setDropoff({ lat: latlng.lat, lng: latlng.lng });
       setDropoffAddress(`${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`);
+      setDropoffSearch(`${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`);
       setStep('confirm');
     }
   }, [step]);
@@ -159,7 +217,7 @@ export default function PassengerApp() {
         {step === 'idle' && (
           <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
             <button
-              onClick={() => setStep('select_pickup')}
+              onClick={() => { setStep('select_pickup'); setPickupSearch(''); setPickupResults([]); }}
               className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg hover:bg-blue-700 transition"
             >
               Pedir taxi
@@ -168,27 +226,85 @@ export default function PassengerApp() {
         )}
 
         {step === 'select_pickup' && (
-          <div className="absolute bottom-0 left-0 right-0 bg-white p-4 rounded-t-2xl shadow-lg z-10">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <span className="font-medium">Tocá el mapa para elegir el punto de recolección</span>
+          <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col" style={{ maxHeight: '50vh' }}>
+            <div className="bg-white p-4 rounded-t-2xl shadow-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-3 h-3 bg-green-500 rounded-full shrink-0"></div>
+                <span className="font-medium text-sm">Origen</span>
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Buscá una dirección o tocá en el mapa..."
+                  value={pickupSearch}
+                  onChange={(e) => onPickupSearch(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                  autoFocus
+                />
+                {searching && <div className="absolute right-3 top-3 animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>}
+              </div>
+              {pickupResults.length > 0 && (
+                <div className="mt-2 max-h-40 overflow-y-auto divide-y border rounded-lg">
+                  {pickupResults.map((r, i) => (
+                    <button
+                      key={i}
+                      onClick={() => selectPickup(r)}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition"
+                    >
+                      {r.display}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="mt-2 text-xs text-gray-400 text-center">
+                También podés tocar el mapa para elegir la ubicación
+              </div>
+              <button onClick={() => setStep('idle')} className="mt-2 text-gray-500 text-sm w-full text-center">
+                Cancelar
+              </button>
             </div>
-            <button onClick={() => setStep('idle')} className="text-gray-500 text-sm">
-              Cancelar
-            </button>
           </div>
         )}
 
         {step === 'select_dropoff' && (
-          <div className="absolute bottom-0 left-0 right-0 bg-white p-4 rounded-t-2xl shadow-lg z-10">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-              <span className="font-medium">Ahora tocá el mapa para elegir el destino</span>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => { setStep('select_pickup'); setDropoff(null); }} className="text-gray-500 text-sm">
-                Volver
-              </button>
+          <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col" style={{ maxHeight: '50vh' }}>
+            <div className="bg-white p-4 rounded-t-2xl shadow-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-3 h-3 bg-red-500 rounded-full shrink-0"></div>
+                <span className="font-medium text-sm">Destino</span>
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Buscá una dirección o tocá en el mapa..."
+                  value={dropoffSearch}
+                  onChange={(e) => onDropoffSearch(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                  autoFocus
+                />
+                {searching && <div className="absolute right-3 top-3 animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>}
+              </div>
+              {dropoffResults.length > 0 && (
+                <div className="mt-2 max-h-40 overflow-y-auto divide-y border rounded-lg">
+                  {dropoffResults.map((r, i) => (
+                    <button
+                      key={i}
+                      onClick={() => selectDropoff(r)}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition"
+                    >
+                      {r.display}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="mt-2 text-xs text-gray-400 text-center">
+                También podés tocar el mapa para elegir la ubicación
+              </div>
+              <div className="flex gap-2 mt-2">
+                <button onClick={() => { setStep('select_pickup'); setDropoff(null); setDropoffSearch(''); setDropoffResults([]); }} className="text-gray-500 text-sm flex-1 text-center">
+                  Volver
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -196,7 +312,10 @@ export default function PassengerApp() {
         {step === 'confirm' && estimate && (
           <div className="absolute bottom-0 left-0 right-0 bg-white p-4 rounded-t-2xl shadow-lg z-10">
             <h3 className="font-bold text-lg mb-3">Confirmar viaje</h3>
-            
+            <div className="space-y-1 mb-3 text-xs text-gray-600">
+              <p><span className="font-medium">Origen:</span> {pickupAddress}</p>
+              <p><span className="font-medium">Destino:</span> {dropoffAddress}</p>
+            </div>
             <div className="space-y-2 mb-4 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-500">Distancia</span>

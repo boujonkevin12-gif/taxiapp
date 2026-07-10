@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Map from '../components/Map';
 import { api } from '../services/api';
 import { useSocket } from '../context/SocketContext';
@@ -13,6 +13,10 @@ export default function DriverApp() {
   const [earnings, setEarnings] = useState({ total_rides: 0, total_earnings: 0 });
   const [currentLocation, setCurrentLocation] = useState([-31.8023, -58.2316]);
   const [showEarnings, setShowEarnings] = useState(false);
+  const isAvailableRef = useRef(isAvailable);
+  const activeRideRef = useRef(activeRide);
+  isAvailableRef.current = isAvailable;
+  activeRideRef.current = activeRide;
 
   useEffect(() => {
     const watchId = navigator.geolocation?.watchPosition(
@@ -22,7 +26,7 @@ export default function DriverApp() {
         if (socket) {
           socket.emit('driver_location', { userId: user.id, ...loc });
         }
-        if (isAvailable) {
+        if (isAvailableRef.current) {
           api.driver.updateLocation(loc.lat, loc.lng).catch(console.error);
         }
       },
@@ -30,29 +34,30 @@ export default function DriverApp() {
       { enableHighAccuracy: true }
     );
     return () => navigator.geolocation?.clearWatch(watchId);
-  }, [socket, user, isAvailable]);
+  }, [socket, user]);
 
   useEffect(() => {
-    if (socket) {
-      socket.on('new_ride', (ride) => {
-        if (isAvailable && !activeRide) {
-          setPendingRides(prev => [ride, ...prev]);
+    if (!socket) return;
+    const onNewRide = (ride) => {
+      if (isAvailableRef.current && !activeRideRef.current) {
+        setPendingRides(prev => [ride, ...prev]);
+      }
+    };
+    const onRideUpdate = (data) => {
+      if (activeRideRef.current && data.rideId === activeRideRef.current.id) {
+        if (data.status === 'cancelled') {
+          setActiveRide(null);
+          alert('El pasajero canceló el viaje');
         }
-      });
-      socket.on('ride_update_global', (data) => {
-        if (activeRide && data.rideId === activeRide.id) {
-          if (data.status === 'cancelled') {
-            setActiveRide(null);
-            alert('El pasajero canceló el viaje');
-          }
-        }
-      });
-      return () => {
-        socket.off('new_ride');
-        socket.off('ride_update_global');
-      };
-    }
-  }, [socket, isAvailable, activeRide]);
+      }
+    };
+    socket.on('new_ride', onNewRide);
+    socket.on('ride_update_global', onRideUpdate);
+    return () => {
+      socket.off('new_ride', onNewRide);
+      socket.off('ride_update_global', onRideUpdate);
+    };
+  }, [socket]);
 
   const toggleAvailability = async () => {
     try {

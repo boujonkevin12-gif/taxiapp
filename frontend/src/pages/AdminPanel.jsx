@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
+import Map from '../components/Map';
 
 export default function AdminPanel() {
   const { user, logout } = useAuth();
+  const socket = useSocket();
   const [tab, setTab] = useState('dashboard');
   const [stats, setStats] = useState(null);
   const [rides, setRides] = useState([]);
@@ -12,10 +15,36 @@ export default function AdminPanel() {
   const [dailyReport, setDailyReport] = useState([]);
   const [showAddDriver, setShowAddDriver] = useState(false);
   const [newDriver, setNewDriver] = useState({ name: '', email: '', phone: '', password: '', plate: '', license: '', vehicle_type: 'sedan' });
+  const [driverLocations, setDriverLocations] = useState([]);
+  const [currentLocation, setCurrentLocation] = useState([-31.8023, -58.2316]);
+  const locationsRef = useRef({});
+
+  useEffect(() => {
+    navigator.geolocation?.getCurrentPosition(
+      (pos) => setCurrentLocation([pos.coords.latitude, pos.coords.longitude]),
+      () => {}
+    );
+  }, []);
 
   useEffect(() => {
     loadDashboard();
   }, []);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on('driver_moved', (data) => {
+        locationsRef.current[data.userId] = {
+          ...(locationsRef.current[data.userId] || {}),
+          lat: data.lat,
+          lng: data.lng,
+        };
+        setDriverLocations(Object.values(locationsRef.current));
+      });
+      return () => {
+        socket.off('driver_moved');
+      };
+    }
+  }, [socket]);
 
   const loadDashboard = async () => {
     const [s, d, dr] = await Promise.all([
@@ -26,6 +55,15 @@ export default function AdminPanel() {
     setStats(s);
     setRides(d);
     setDrivers(dr);
+    const locs = {};
+    dr.forEach(drv => {
+      if (drv.current_lat && drv.current_lng) {
+        const key = drv.user_id;
+        locs[key] = { userId: key, lat: drv.current_lat, lng: drv.current_lng, name: drv.name, plate: drv.plate, status: drv.status };
+      }
+    });
+    locationsRef.current = locs;
+    setDriverLocations(Object.values(locs));
   };
 
   const loadPricing = async () => {
@@ -128,6 +166,21 @@ export default function AdminPanel() {
               <div className="bg-white p-4 rounded-xl shadow">
                 <div className="text-2xl font-bold text-yellow-600">${stats.rides.revenue}</div>
                 <div className="text-sm text-gray-500">Ingresos totales</div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow overflow-hidden" style={{ height: '400px' }}>
+              <div className="p-3 border-b bg-gray-50 flex justify-between items-center">
+                <h3 className="font-bold text-sm">Conductores en tiempo real</h3>
+                <span className="text-xs text-gray-500">{driverLocations.length} conectados</span>
+              </div>
+              <div className="h-[calc(100%-44px)]">
+                <Map
+                  center={currentLocation}
+                  zoom={13}
+                  drivers={driverLocations}
+                  className="h-full"
+                />
               </div>
             </div>
           </div>

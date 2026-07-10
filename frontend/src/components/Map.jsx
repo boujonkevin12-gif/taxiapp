@@ -51,6 +51,7 @@ export default function Map({
   pickup = null,
   dropoff = null,
   driverLocation = null,
+  drivers = null,
   className = '',
   onMapClick = null
 }) {
@@ -105,6 +106,22 @@ export default function Map({
             <Popup>Tu conductor</Popup>
           </Marker>
         )}
+
+        {drivers && drivers.map((d, i) => (
+          <Marker
+            key={d.userId || i}
+            position={[d.lat, d.lng]}
+            icon={driverIcon}
+          >
+            <Popup>
+              <div className="text-sm font-medium">{d.name}</div>
+              <div className="text-xs text-gray-500">{d.plate}</div>
+              <div className={`text-xs ${d.status === 'available' ? 'text-green-600' : d.status === 'busy' ? 'text-yellow-600' : 'text-gray-400'}`}>
+                {d.status === 'available' ? 'Disponible' : d.status === 'busy' ? 'En viaje' : 'Offline'}
+              </div>
+            </Popup>
+          </Marker>
+        ))}
       </MapContainer>
     </div>
   );
