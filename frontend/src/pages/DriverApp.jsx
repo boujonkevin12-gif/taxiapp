@@ -135,7 +135,37 @@ export default function DriverApp() {
       <div className="flex-1 relative">
         <Map
           center={currentLocation}
+          pickup={
+            activeRide
+              ? { lat: activeRide.pickup_lat, lng: activeRide.pickup_lng }
+              : pendingRides[0]
+                ? { lat: pendingRides[0].pickup_lat, lng: pendingRides[0].pickup_lng }
+                : null
+          }
+          dropoff={
+            activeRide
+              ? { lat: activeRide.dropoff_lat, lng: activeRide.dropoff_lng }
+              : pendingRides[0]
+                ? { lat: pendingRides[0].dropoff_lat, lng: pendingRides[0].dropoff_lng }
+                : null
+          }
           driverLocation={activeRide ? { lat: currentLocation[0], lng: currentLocation[1] } : null}
+          routeFrom={
+            activeRide?.status === 'accepted'
+              ? { lat: currentLocation[0], lng: currentLocation[1] }
+              : pendingRides[0] && !activeRide
+                ? { lat: pendingRides[0].pickup_lat, lng: pendingRides[0].pickup_lng }
+                : null
+          }
+          routeTo={
+            activeRide?.status === 'accepted'
+              ? { lat: activeRide.pickup_lat, lng: activeRide.pickup_lng }
+              : activeRide?.status === 'in_progress'
+                ? { lat: activeRide.dropoff_lat, lng: activeRide.dropoff_lng }
+                : pendingRides[0] && !activeRide
+                  ? { lat: pendingRides[0].dropoff_lat, lng: pendingRides[0].dropoff_lng }
+                  : null
+          }
           className="h-full"
         />
 
@@ -157,15 +187,11 @@ export default function DriverApp() {
             <h3 className="font-bold text-lg text-gray-800 mb-4">Solicitudes ({pendingRides.length})</h3>
             {pendingRides.map((ride) => (
               <div key={ride.id} className="bg-gray-50 p-4 rounded-xl mb-3 border border-gray-100">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-gray-400">👤</span>
-                      <p className="font-semibold text-gray-800">{ride.passenger_name || 'Pasajero'}</p>
-                    </div>
-                    <p className="text-sm text-gray-500 ml-6">
-                      ${ride.fare_estimate} • {ride.payment_method === 'cash' ? 'Efectivo' : 'Transferencia'}
-                    </p>
+                <div className="flex justify-between items-start mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-400">👤</span>
+                    <p className="font-semibold text-gray-800">{ride.passenger_name || 'Pasajero'}</p>
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">${ride.fare_estimate}</span>
                   </div>
                   <button
                     onClick={() => acceptRide(ride)}
@@ -173,6 +199,19 @@ export default function DriverApp() {
                   >
                     Aceptar
                   </button>
+                </div>
+                <div className="space-y-1.5 ml-1 border-l-2 border-dashed border-gray-300 pl-3">
+                  <div className="flex items-start gap-2">
+                    <span className="text-green-500 text-xs mt-0.5">🟢</span>
+                    <span className="text-xs text-gray-600 leading-tight">{ride.pickup_address || 'Sin dirección'}</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-red-500 text-xs mt-0.5">🔴</span>
+                    <span className="text-xs text-gray-600 leading-tight">{ride.dropoff_address || 'Sin dirección'}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mt-2 ml-1">
+                  <span className="text-xs text-gray-400">{ride.payment_method === 'cash' ? '💵 Efectivo' : '📱 Transferencia'}</span>
                 </div>
               </div>
             ))}

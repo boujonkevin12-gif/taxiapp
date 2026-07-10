@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { useEffect, useRef, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
 const defaultIcon = L.icon({
@@ -45,6 +45,29 @@ function MapUpdater({ center, zoom }) {
   return null;
 }
 
+function RouteLine({ from, to }) {
+  const [coords, setCoords] = useState(null);
+  useEffect(() => {
+    if (!from || !to) { setCoords(null); return; }
+    setCoords(null);
+    fetch(`https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?geometries=geojson&overview=full`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.routes?.[0]?.geometry?.coordinates) {
+          setCoords(data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]));
+        }
+      })
+      .catch(() => setCoords(null));
+  }, [from, to]);
+  if (!coords) return null;
+  return (
+    <Polyline
+      positions={coords}
+      pathOptions={{ color: '#3b82f6', weight: 4, opacity: 0.7 }}
+    />
+  );
+}
+
 export default function Map({
   center = [-31.8, -58.23],
   zoom = 14,
@@ -53,7 +76,9 @@ export default function Map({
   driverLocation = null,
   drivers = null,
   className = '',
-  onMapClick = null
+  onMapClick = null,
+  routeFrom = null,
+  routeTo = null,
 }) {
   const mapRef = useRef(null);
 
@@ -122,6 +147,10 @@ export default function Map({
             </Popup>
           </Marker>
         ))}
+
+        {(routeFrom || pickup) && (routeTo || dropoff) && (
+          <RouteLine from={routeFrom || pickup} to={routeTo || dropoff} />
+        )}
       </MapContainer>
     </div>
   );
