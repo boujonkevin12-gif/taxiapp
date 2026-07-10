@@ -23,11 +23,13 @@ function cleanAddress(r) {
 
 async function geocode(query) {
   if (!query || query.length < 3 || !GEO_KEY) return [];
+  const text = query.toLowerCase().includes('concepción') ? query : `${query}, Concepción del Uruguay`;
   const params = new URLSearchParams({
-    text: query,
+    text,
     apiKey: GEO_KEY,
     limit: '8',
     country: 'argentina',
+    filter: 'circle:-58.2322,-32.4826,20000',
     bias: 'proximity:-58.2322,-32.4826',
     format: 'json',
   });
@@ -256,18 +258,17 @@ export default function PassengerApp() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
-      <header className="bg-blue-600 text-white p-4 flex justify-between items-center shadow-md z-10">
+    <div className="h-screen flex flex-col bg-gray-50">
+      <header className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-4 pt-4 pb-3 flex justify-between items-center shadow-lg z-10">
         <div className="flex items-center gap-2">
-          <span className="text-xl">🚕</span>
-          <span className="font-semibold">Taxi App</span>
+          <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-sm">🚕</div>
+          <span className="font-bold text-lg tracking-tight">TaxiApp</span>
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={loadHistory} className="text-sm opacity-80 hover:opacity-100">
+        <div className="flex items-center gap-2">
+          <button onClick={loadHistory} className="text-xs font-medium px-3 py-1.5 bg-white/15 rounded-full hover:bg-white/25 transition">
             Mis viajes
           </button>
-          <span className="text-sm opacity-80">{user?.name}</span>
-          <button onClick={logout} className="text-sm bg-blue-700 px-3 py-1 rounded-full">
+          <button onClick={logout} className="text-xs font-medium px-3 py-1.5 bg-white/15 rounded-full hover:bg-white/25 transition">
             Salir
           </button>
         </div>
@@ -284,10 +285,10 @@ export default function PassengerApp() {
         />
 
         {step === 'idle' && (
-          <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
+          <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
             <button
               onClick={() => { setStep('select_pickup'); setPickupSearch(''); setPickupResults([]); }}
-              className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg hover:bg-blue-700 transition"
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:from-blue-700 hover:to-indigo-700 transition-all active:scale-[0.98]"
             >
               Pedir taxi
             </button>
@@ -295,40 +296,46 @@ export default function PassengerApp() {
         )}
 
         {step === 'select_pickup' && (
-          <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col" style={{ maxHeight: '50vh' }}>
-            <div className="bg-white p-4 rounded-t-2xl shadow-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-3 h-3 bg-green-500 rounded-full shrink-0"></div>
-                <span className="font-medium text-sm">Origen</span>
+          <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col" style={{ maxHeight: '55vh' }}>
+            <div className="bg-white p-5 rounded-t-3xl shadow-2xl">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center shrink-0">
+                  <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                </div>
+                <div>
+                  <span className="font-semibold text-sm text-gray-700">¿Dónde te encontás?</span>
+                  <p className="text-xs text-gray-400">Origen del viaje</p>
+                </div>
               </div>
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Buscá una dirección o tocá en el mapa..."
+                  placeholder="Buscá una dirección..."
                   value={pickupSearch}
                   onChange={(e) => onPickupSearch(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition bg-gray-50"
                   autoFocus
                 />
-                {searching && <div className="absolute right-3 top-3 animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>}
+                {searching && <div className="absolute right-4 top-3.5 animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>}
               </div>
               {pickupResults.length > 0 && (
-                <div className="mt-2 max-h-40 overflow-y-auto divide-y border rounded-lg">
+                <div className="mt-3 max-h-36 overflow-y-auto divide-y rounded-xl border border-gray-100">
                   {pickupResults.map((r, i) => (
                     <button
                       key={i}
                       onClick={() => selectPickup(r)}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition"
+                      className="w-full text-left px-4 py-3 text-sm hover:bg-blue-50 transition flex items-start gap-3"
                     >
-                      {r.display}
+                      <span className="text-gray-400 mt-0.5">📍</span>
+                      <span className="text-gray-700 leading-tight">{r.display}</span>
                     </button>
                   ))}
                 </div>
               )}
-              <div className="mt-2 text-xs text-gray-400 text-center">
-                También podés tocar el mapa para elegir la ubicación
+              <div className="mt-3 text-xs text-gray-400 text-center flex items-center justify-center gap-1">
+                <span>👆</span> También tocá en el mapa
               </div>
-              <button onClick={() => setStep('idle')} className="mt-2 text-gray-500 text-sm w-full text-center">
+              <button onClick={() => setStep('idle')} className="mt-3 w-full py-2.5 text-sm text-gray-500 font-medium hover:text-gray-700 transition rounded-xl hover:bg-gray-50">
                 Cancelar
               </button>
             </div>
@@ -336,41 +343,47 @@ export default function PassengerApp() {
         )}
 
         {step === 'select_dropoff' && (
-          <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col" style={{ maxHeight: '50vh' }}>
-            <div className="bg-white p-4 rounded-t-2xl shadow-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-3 h-3 bg-red-500 rounded-full shrink-0"></div>
-                <span className="font-medium text-sm">Destino</span>
+          <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col" style={{ maxHeight: '55vh' }}>
+            <div className="bg-white p-5 rounded-t-3xl shadow-2xl">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center shrink-0">
+                  <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                </div>
+                <div>
+                  <span className="font-semibold text-sm text-gray-700">¿Adónde vas?</span>
+                  <p className="text-xs text-gray-400">Destino del viaje</p>
+                </div>
               </div>
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Buscá una dirección o tocá en el mapa..."
+                  placeholder="Buscá una dirección..."
                   value={dropoffSearch}
                   onChange={(e) => onDropoffSearch(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition bg-gray-50"
                   autoFocus
                 />
-                {searching && <div className="absolute right-3 top-3 animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>}
+                {searching && <div className="absolute right-4 top-3.5 animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>}
               </div>
               {dropoffResults.length > 0 && (
-                <div className="mt-2 max-h-40 overflow-y-auto divide-y border rounded-lg">
+                <div className="mt-3 max-h-36 overflow-y-auto divide-y rounded-xl border border-gray-100">
                   {dropoffResults.map((r, i) => (
                     <button
                       key={i}
                       onClick={() => selectDropoff(r)}
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 transition"
+                      className="w-full text-left px-4 py-3 text-sm hover:bg-blue-50 transition flex items-start gap-3"
                     >
-                      {r.display}
+                      <span className="text-gray-400 mt-0.5">📍</span>
+                      <span className="text-gray-700 leading-tight">{r.display}</span>
                     </button>
                   ))}
                 </div>
               )}
-              <div className="mt-2 text-xs text-gray-400 text-center">
-                También podés tocar el mapa para elegir la ubicación
+              <div className="mt-3 text-xs text-gray-400 text-center flex items-center justify-center gap-1">
+                <span>👆</span> También tocá en el mapa
               </div>
-              <div className="flex gap-2 mt-2">
-                <button onClick={() => { setStep('select_pickup'); setDropoff(null); setDropoffSearch(''); setDropoffResults([]); }} className="text-gray-500 text-sm flex-1 text-center">
+              <div className="flex gap-3 mt-3">
+                <button onClick={() => { setStep('select_pickup'); setDropoff(null); setDropoffSearch(''); setDropoffResults([]); }} className="flex-1 py-2.5 text-sm text-gray-500 font-medium hover:text-gray-700 transition rounded-xl hover:bg-gray-50">
                   Volver
                 </button>
               </div>
@@ -379,77 +392,96 @@ export default function PassengerApp() {
         )}
 
         {step === 'confirm' && estimate && (
-          <div className="absolute bottom-0 left-0 right-0 bg-white p-4 rounded-t-2xl shadow-lg z-10">
-            <h3 className="font-bold text-lg mb-3">Confirmar viaje</h3>
-            <div className="space-y-1 mb-3 text-xs text-gray-600">
-              <p><span className="font-medium">Origen:</span> {pickupAddress}</p>
-              <p><span className="font-medium">Destino:</span> {dropoffAddress}</p>
+          <div className="absolute bottom-0 left-0 right-0 bg-white p-5 rounded-t-3xl shadow-2xl z-10">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm">🚕</div>
+              <h3 className="font-bold text-lg text-gray-800">Confirmar viaje</h3>
             </div>
-            <div className="space-y-2 mb-4 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Distancia</span>
-                <span>{estimate.distance_km} km</span>
+            <div className="bg-gray-50 rounded-xl p-3 mb-4 space-y-2 text-sm">
+              <div className="flex items-start gap-2">
+                <span className="text-green-500 mt-0.5">🟢</span>
+                <span className="text-gray-600 text-xs leading-tight">{pickupAddress}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Tiempo estimado</span>
-                <span>{estimate.duration_min} min</span>
+              <div className="border-l-2 border-dashed border-gray-300 ml-2 h-2"></div>
+              <div className="flex items-start gap-2">
+                <span className="text-red-500 mt-0.5">🔴</span>
+                <span className="text-gray-600 text-xs leading-tight">{dropoffAddress}</span>
               </div>
-              <div className="flex justify-between text-lg font-bold">
-                <span>Tarifa estimada</span>
-                <span className="text-blue-600">${estimate.fare_estimate}</span>
+            </div>
+            <div className="space-y-3 mb-5">
+              <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400">📏</span>
+                  <span className="text-sm text-gray-500">Distancia</span>
+                </div>
+                <span className="text-sm font-semibold text-gray-700">{estimate.distance_km} km</span>
+              </div>
+              <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400">⏱</span>
+                  <span className="text-sm text-gray-500">Tiempo estimado</span>
+                </div>
+                <span className="text-sm font-semibold text-gray-700">{estimate.duration_min} min</span>
+              </div>
+              <div className="flex items-center justify-between bg-blue-50 rounded-xl px-4 py-3 border border-blue-100">
+                <span className="text-sm font-semibold text-gray-700">Tarifa estimada</span>
+                <span className="text-xl font-bold text-blue-600">${estimate.fare_estimate}</span>
               </div>
             </div>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Forma de pago</label>
-              <div className="flex gap-2">
+            <div className="mb-5">
+              <label className="block text-sm font-semibold text-gray-700 mb-3">Forma de pago</label>
+              <div className="flex gap-3">
                 <button
                   onClick={() => setPaymentMethod('cash')}
-                  className={`flex-1 py-2 rounded-lg border ${
+                  className={`flex-1 py-3 rounded-xl font-medium text-sm border-2 transition ${
                     paymentMethod === 'cash'
-                      ? 'border-blue-600 bg-blue-50 text-blue-600'
-                      : 'border-gray-300'
+                      ? 'border-blue-600 bg-blue-50 text-blue-700'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300'
                   }`}
                 >
-                  Efectivo
+                  💵 Efectivo
                 </button>
                 <button
                   onClick={() => setPaymentMethod('mercadopago_transfer')}
-                  className={`flex-1 py-2 rounded-lg border ${
+                  className={`flex-1 py-3 rounded-xl font-medium text-sm border-2 transition ${
                     paymentMethod === 'mercadopago_transfer'
-                      ? 'border-blue-600 bg-blue-50 text-blue-600'
-                      : 'border-gray-300'
+                      ? 'border-blue-600 bg-blue-50 text-blue-700'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300'
                   }`}
                 >
-                  Transferencia MP
+                  📱 Transferencia MP
                 </button>
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <button
                 onClick={() => { setStep('idle'); setDropoff(null); setEstimate(null); }}
-                className="flex-1 py-3 border border-gray-300 rounded-lg"
+                className="flex-1 py-3.5 border-2 border-gray-200 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-50 transition"
               >
                 Cancelar
               </button>
               <button
                 onClick={requestRide}
-                className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-semibold"
+                className="flex-1 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-indigo-700 transition-all active:scale-[0.98]"
               >
-                Confirmar ${estimate.fare_estimate}
+                Confirmar $<span className="text-lg">{estimate.fare_estimate}</span>
               </button>
             </div>
           </div>
         )}
 
         {step === 'waiting' && (
-          <div className="absolute bottom-0 left-0 right-0 bg-white p-4 rounded-t-2xl shadow-lg z-10">
+          <div className="absolute bottom-0 left-0 right-0 bg-white p-6 rounded-t-3xl shadow-2xl z-10">
             <div className="text-center">
-              <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-3"></div>
-              <h3 className="font-bold text-lg">Buscando conductor...</h3>
-              <p className="text-gray-500 text-sm mt-1">Esperá un momento</p>
-              <button onClick={cancelRide} className="mt-4 text-red-500 text-sm font-medium">
+              <div className="relative mx-auto mb-5 w-16 h-16">
+                <div className="absolute inset-0 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600"></div>
+                <div className="absolute inset-0 flex items-center justify-center text-2xl">🚕</div>
+              </div>
+              <h3 className="font-bold text-xl text-gray-800">Buscando conductor</h3>
+              <p className="text-gray-400 text-sm mt-2">Esperá un momento, ya encontramos a alguien</p>
+              <button onClick={cancelRide} className="mt-6 w-full py-3 border-2 border-red-100 text-red-500 rounded-xl font-semibold text-sm hover:bg-red-50 transition">
                 Cancelar viaje
               </button>
             </div>
@@ -457,40 +489,42 @@ export default function PassengerApp() {
         )}
 
         {step === 'on_ride' && currentRide && (
-          <div className="absolute bottom-0 left-0 right-0 bg-white p-4 rounded-t-2xl shadow-lg z-10">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-xl">
+          <div className="absolute bottom-0 left-0 right-0 bg-white p-5 rounded-t-3xl shadow-2xl z-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center text-2xl border-2 border-blue-200">
                 🚗
               </div>
               <div>
-                <h3 className="font-bold text-lg">{currentRide.driver_name || 'Conductor'}</h3>
+                <h3 className="font-bold text-lg text-gray-800">{currentRide.driver_name || 'Conductor'}</h3>
                 <p className="text-sm text-gray-500">
                   {currentRide.vehicle_type} • {currentRide.plate}
                 </p>
               </div>
             </div>
-            <div className="space-y-2 text-sm mb-4">
-              <div className="flex justify-between">
+            <div className="bg-gray-50 rounded-xl p-4 space-y-3 text-sm mb-4">
+              <div className="flex justify-between items-center">
                 <span className="text-gray-500">Estado</span>
-                <span className={`font-medium ${currentRide.status === 'accepted' ? 'text-yellow-600' : 'text-blue-600'}`}>
+                <span className={`font-semibold px-3 py-1 rounded-full text-xs ${
+                  currentRide.status === 'accepted' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'
+                }`}>
                   {currentRide.status === 'accepted' ? 'Conductor en camino' : 'Viaje en progreso'}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Origen</span>
-                <span className="text-right max-w-[60%] truncate">{currentRide.pickup_address}</span>
+              <div className="flex justify-between items-start">
+                <span className="text-gray-500 shrink-0">Origen</span>
+                <span className="text-right max-w-[65%] text-gray-700">{currentRide.pickup_address}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Destino</span>
-                <span className="text-right max-w-[60%] truncate">{currentRide.dropoff_address}</span>
+              <div className="flex justify-between items-start">
+                <span className="text-gray-500 shrink-0">Destino</span>
+                <span className="text-right max-w-[65%] text-gray-700">{currentRide.dropoff_address}</span>
               </div>
-              <div className="flex justify-between font-bold">
-                <span>Tarifa</span>
-                <span className="text-blue-600">${currentRide.fare_estimate}</span>
+              <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                <span className="font-semibold text-gray-700">Tarifa</span>
+                <span className="text-lg font-bold text-blue-600">${currentRide.fare_estimate}</span>
               </div>
             </div>
             {currentRide.status === 'accepted' && (
-              <button onClick={cancelRide} className="w-full border border-red-300 text-red-600 py-3 rounded-lg font-medium">
+              <button onClick={cancelRide} className="w-full py-3 border-2 border-red-100 text-red-500 rounded-xl font-semibold text-sm hover:bg-red-50 transition">
                 Cancelar viaje
               </button>
             )}
@@ -498,14 +532,17 @@ export default function PassengerApp() {
         )}
 
         {step === 'rate' && (
-          <div className="absolute bottom-0 left-0 right-0 bg-white p-4 rounded-t-2xl shadow-lg z-10">
-            <h3 className="font-bold text-lg mb-3">Calificá tu viaje</h3>
-            <div className="flex justify-center gap-2 mb-4">
+          <div className="absolute bottom-0 left-0 right-0 bg-white p-6 rounded-t-3xl shadow-2xl z-10">
+            <h3 className="font-bold text-xl text-gray-800 text-center mb-2">Calificá tu viaje</h3>
+            <p className="text-gray-400 text-sm text-center mb-6">¿Cómo fue tu experiencia?</p>
+            <div className="flex justify-center gap-3 mb-6">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
                   onClick={() => setRating(star)}
-                  className={`text-3xl ${star <= rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                  className={`text-4xl transition-all duration-150 ${
+                    star <= rating ? 'text-yellow-400 scale-110' : 'text-gray-200 hover:text-yellow-300'
+                  }`}
                 >
                   ★
                 </button>
@@ -513,7 +550,7 @@ export default function PassengerApp() {
             </div>
             <button
               onClick={rateRide}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold"
+              className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-indigo-700 transition-all active:scale-[0.98]"
             >
               Enviar calificación
             </button>

@@ -113,20 +113,20 @@ export default function DriverApp() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
-      <header className="bg-green-600 text-white p-4 flex justify-between items-center shadow-md z-10">
+    <div className="h-screen flex flex-col bg-gray-50">
+      <header className="bg-gradient-to-r from-green-600 to-emerald-700 text-white px-4 pt-4 pb-3 flex justify-between items-center shadow-lg z-10">
         <div className="flex items-center gap-2">
-          <span className="text-xl">🚗</span>
-          <span className="font-semibold">Modo Conductor</span>
+          <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-sm">🚗</div>
+          <span className="font-bold text-lg tracking-tight">Conductor</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button 
             onClick={() => { loadEarnings(); setShowEarnings(true); }} 
-            className="text-sm opacity-80 hover:opacity-100"
+            className="text-xs font-medium px-3 py-1.5 bg-white/15 rounded-full hover:bg-white/25 transition"
           >
             Ganancias
           </button>
-          <button onClick={logout} className="text-sm bg-green-700 px-3 py-1 rounded-full">
+          <button onClick={logout} className="text-xs font-medium px-3 py-1.5 bg-white/15 rounded-full hover:bg-white/25 transition">
             Salir
           </button>
         </div>
@@ -153,20 +153,23 @@ export default function DriverApp() {
         </div>
 
         {isAvailable && pendingRides.length > 0 && !activeRide && (
-          <div className="absolute bottom-0 left-0 right-0 bg-white p-4 rounded-t-2xl shadow-lg max-h-[40vh] overflow-y-auto z-10">
-            <h3 className="font-bold text-lg mb-3">Solicitudes pendientes ({pendingRides.length})</h3>
+          <div className="absolute bottom-0 left-0 right-0 bg-white p-5 rounded-t-3xl shadow-2xl max-h-[45vh] overflow-y-auto z-10">
+            <h3 className="font-bold text-lg text-gray-800 mb-4">Solicitudes ({pendingRides.length})</h3>
             {pendingRides.map((ride) => (
-              <div key={ride.id} className="bg-gray-50 p-3 rounded-lg mb-2">
+              <div key={ride.id} className="bg-gray-50 p-4 rounded-xl mb-3 border border-gray-100">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="font-medium">{ride.passenger_name || 'Pasajero'}</p>
-                    <p className="text-sm text-gray-500">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-gray-400">👤</span>
+                      <p className="font-semibold text-gray-800">{ride.passenger_name || 'Pasajero'}</p>
+                    </div>
+                    <p className="text-sm text-gray-500 ml-6">
                       ${ride.fare_estimate} • {ride.payment_method === 'cash' ? 'Efectivo' : 'Transferencia'}
                     </p>
                   </div>
                   <button
                     onClick={() => acceptRide(ride)}
-                    className="bg-green-500 text-white px-4 py-2 rounded-lg font-medium"
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm shadow-md hover:shadow-lg hover:from-green-600 hover:to-emerald-700 transition-all active:scale-95"
                   >
                     Aceptar
                   </button>
@@ -177,42 +180,45 @@ export default function DriverApp() {
         )}
 
         {activeRide && (
-          <div className="absolute bottom-0 left-0 right-0 bg-white p-4 rounded-t-2xl shadow-lg z-10">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-bold text-lg">Viaje activo</h3>
-              <span className={`px-2 py-1 rounded text-xs font-medium ${
+          <div className="absolute bottom-0 left-0 right-0 bg-white p-5 rounded-t-3xl shadow-2xl z-10">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-lg text-gray-800">Viaje activo</h3>
+              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
                 activeRide.status === 'accepted' ? 'bg-yellow-100 text-yellow-700' :
                 activeRide.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100'
               }`}>
-                {activeRide.status === 'accepted' ? 'Dirigiéndote al pasajero' :
+                {activeRide.status === 'accepted' ? 'En camino' :
                  activeRide.status === 'in_progress' ? 'En viaje' : activeRide.status}
               </span>
             </div>
 
-            <div className="space-y-2 text-sm mb-4">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Pasajero</span>
-                <span>{activeRide.passenger_name || 'Pasajero'}</span>
+            <div className="bg-gray-50 rounded-xl p-4 space-y-3 text-sm mb-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400">👤</span>
+                  <span className="text-gray-500">Pasajero</span>
+                </div>
+                <span className="font-semibold text-gray-800">{activeRide.passenger_name || 'Pasajero'}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Origen</span>
-                <span className="text-right max-w-[60%] truncate">{activeRide.pickup_address}</span>
+              <div className="flex justify-between items-start">
+                <span className="text-gray-500 shrink-0">📍 Origen</span>
+                <span className="text-right max-w-[60%] text-gray-700">{activeRide.pickup_address}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Destino</span>
-                <span className="text-right max-w-[60%] truncate">{activeRide.dropoff_address}</span>
+              <div className="flex justify-between items-start">
+                <span className="text-gray-500 shrink-0">🏁 Destino</span>
+                <span className="text-right max-w-[60%] text-gray-700">{activeRide.dropoff_address}</span>
               </div>
-              <div className="flex justify-between font-bold">
-                <span>Tarifa</span>
-                <span className="text-green-600">${activeRide.fare_estimate}</span>
+              <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                <span className="font-semibold text-gray-700">Tarifa</span>
+                <span className="text-lg font-bold text-emerald-600">${activeRide.fare_estimate}</span>
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               {activeRide.status === 'accepted' && (
                 <button
                   onClick={startRide}
-                  className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold"
+                  className="flex-1 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-indigo-700 transition-all active:scale-[0.98]"
                 >
                   Iniciar viaje
                 </button>
@@ -220,7 +226,7 @@ export default function DriverApp() {
               {activeRide.status === 'in_progress' && (
                 <button
                   onClick={completeRide}
-                  className="flex-1 bg-green-600 text-white py-3 rounded-lg font-semibold"
+                  className="flex-1 py-3.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-xl hover:from-green-600 hover:to-emerald-700 transition-all active:scale-[0.98]"
                 >
                   Completar viaje
                 </button>
