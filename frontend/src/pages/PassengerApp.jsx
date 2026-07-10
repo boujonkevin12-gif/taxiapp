@@ -15,6 +15,16 @@ async function geocode(query) {
   }));
 }
 
+async function reverseGeocode(lat, lng) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`);
+    const data = await res.json();
+    return data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  } catch {
+    return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  }
+}
+
 export default function PassengerApp() {
   const { user, logout } = useAuth();
   const socket = useSocket();
@@ -49,9 +59,21 @@ export default function PassengerApp() {
   useEffect(() => {
     if (socket && currentRide) {
       socket.emit('passenger_track_ride', { rideId: currentRide.id });
-      socket.on('ride_status_update', (data) => {
+      socket.on('ride_status_update', async (data) => {
         if (data.rideId === currentRide.id) {
           setCurrentRide(prev => ({ ...prev, status: data.status }));
+          if (data.status === 'accepted') {
+            try {
+              const details = await api.passenger.getRide(data.rideId);
+              setCurrentRide(details);
+              setStep('on_ride');
+            } catch (e) {
+              console.error(e);
+            }
+          }
+          if (data.status === 'in_progress') {
+            setStep('on_ride');
+          }
           if (data.status === 'completed') {
             setStep('rate');
           }
@@ -115,11 +137,19 @@ export default function PassengerApp() {
       setPickupAddress(`${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`);
       setPickupSearch(`${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`);
       setStep('select_dropoff');
+      reverseGeocode(latlng.lat, latlng.lng).then(addr => {
+        setPickupAddress(addr);
+        setPickupSearch(addr);
+      });
     } else if (step === 'select_dropoff') {
       setDropoff({ lat: latlng.lat, lng: latlng.lng });
       setDropoffAddress(`${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`);
       setDropoffSearch(`${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`);
       setStep('confirm');
+      reverseGeocode(latlng.lat, latlng.lng).then(addr => {
+        setDropoffAddress(addr);
+        setDropoffSearch(addr);
+      });
     }
   }, [step]);
 
@@ -384,6 +414,47 @@ export default function PassengerApp() {
                 Cancelar viaje
               </button>
             </div>
+          </div>
+        )}
+
+        {step === 'on_ride' && currentRide && (
+          <div className="absolute bottom-0 left-0 right-0 bg-white p-4 rounded-t-2xl shadow-lg z-10">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-xl">
+                🚗
+              </div>
+              <div>
+                <h3 className="font-bold text-lg">{currentRide.driver_name || 'Conductor'}</h3>
+                <p className="text-sm text-gray-500">
+                  {currentRide.vehicle_type} • {currentRide.plate}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2 text-sm mb-4">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Estado</span>
+                <span className={`font-medium ${currentRide.status === 'accepted' ? 'text-yellow-600' : 'text-blue-600'}`}>
+                  {currentRide.status === 'accepted' ? 'Conductor en camino' : 'Viaje en progreso'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Origen</span>
+                <span className="text-right max-w-[60%] truncate">{currentRide.pickup_address}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Destino</span>
+                <span className="text-right max-w-[60%] truncate">{currentRide.dropoff_address}</span>
+              </div>
+              <div className="flex justify-between font-bold">
+                <span>Tarifa</span>
+                <span className="text-blue-600">${currentRide.fare_estimate}</span>
+              </div>
+            </div>
+            {currentRide.status === 'accepted' && (
+              <button onClick={cancelRide} className="w-full border border-red-300 text-red-600 py-3 rounded-lg font-medium">
+                Cancelar viaje
+              </button>
+            )}
           </div>
         )}
 

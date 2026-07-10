@@ -56,6 +56,8 @@ router.post('/rides', auth, async (req, res) => {
     );
 
     const ride = result.rows[0];
+    const userData = await query('SELECT name FROM users WHERE id = ?', [req.user.id]);
+    ride.passenger_name = userData.rows[0]?.name || 'Pasajero';
 
     const io = req.app.get('io');
     if (io) {
