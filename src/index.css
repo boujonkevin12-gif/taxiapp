@@ -44,6 +44,15 @@ body {
   background: transparent;
 }
 
+/* Animación pulso para pickup/dropoff cuando hay viaje activo */
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 4px currentColor22, 0 0 0 0 currentColor44; }
+  50% { box-shadow: 0 0 0 4px currentColor22, 0 0 0 12px currentColor11; }
+}
+.pulse-dot {
+  animation: pulse-dot 2s infinite;
+}
+
 @layer utilities {
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);
