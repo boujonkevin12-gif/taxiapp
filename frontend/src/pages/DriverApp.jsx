@@ -39,7 +39,6 @@ export default function DriverApp() {
   useEffect(() => {
     if (!socket) return;
     const onNewRide = (ride) => {
-      console.log('new_ride recibido:', ride);
       setPendingRides(prev => [ride, ...prev]);
     };
     const onRideUpdate = (data) => {
@@ -113,20 +112,20 @@ export default function DriverApp() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
-      <header className="bg-gradient-to-r from-green-600 to-emerald-700 text-white px-4 pt-4 pb-3 flex justify-between items-center shadow-lg z-10">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-sm">🚗</div>
+    <div className="h-screen flex flex-col bg-base-950">
+      <header className="bg-base-900/95 backdrop-blur-xl border-b border-base-700 text-white px-4 pt-4 pb-3 flex justify-between items-center z-20">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 bg-gradient-to-br from-accent-500 to-accent-700 rounded-xl flex items-center justify-center text-sm shadow-glow-accent">🚗</div>
           <span className="font-bold text-lg tracking-tight">Conductor</span>
         </div>
         <div className="flex items-center gap-2">
-          <button 
-            onClick={() => { loadEarnings(); setShowEarnings(true); }} 
-            className="text-xs font-medium px-3 py-1.5 bg-white/15 rounded-full hover:bg-white/25 transition"
+          <button
+            onClick={() => { loadEarnings(); setShowEarnings(true); }}
+            className="text-xs font-medium px-3 py-1.5 bg-base-700/70 border border-base-600 rounded-full hover:bg-base-600 transition"
           >
             Ganancias
           </button>
-          <button onClick={logout} className="text-xs font-medium px-3 py-1.5 bg-white/15 rounded-full hover:bg-white/25 transition">
+          <button onClick={logout} className="text-xs font-medium px-3 py-1.5 bg-red-500/15 border border-red-500/30 text-red-300 rounded-full hover:bg-red-500/25 transition">
             Salir
           </button>
         </div>
@@ -172,46 +171,46 @@ export default function DriverApp() {
         <div className="absolute top-4 left-4 right-4 z-10">
           <button
             onClick={toggleAvailability}
-            className={`w-full py-3 rounded-xl font-semibold shadow-lg transition ${
+            className={`w-full py-3 rounded-2xl font-semibold border transition ${
               isAvailable
-                ? 'bg-green-500 text-white hover:bg-green-600'
-                : 'bg-red-500 text-white hover:bg-red-600'
-            }`}
+                ? 'bg-accent-500/15 border-accent-500/40 text-accent-300 shadow-glow-accent'
+                : 'bg-red-500/15 border-red-500/40 text-red-300'
+            } backdrop-blur-xl`}
           >
             {isAvailable ? '🟢 Disponible' : '🔴 No disponible'}
           </button>
         </div>
 
         {isAvailable && pendingRides.length > 0 && !activeRide && (
-          <div className="absolute bottom-0 left-0 right-0 bg-white p-5 rounded-t-3xl shadow-2xl max-h-[45vh] overflow-y-auto z-10">
-            <h3 className="font-bold text-lg text-gray-800 mb-4">Solicitudes ({pendingRides.length})</h3>
+          <div className="absolute bottom-0 left-0 right-0 card-voxa rounded-t-3xl p-5 max-h-[45vh] overflow-y-auto z-10">
+            <h3 className="font-bold text-lg text-white mb-4">Solicitudes ({pendingRides.length})</h3>
             {pendingRides.map((ride) => (
-              <div key={ride.id} className="bg-gray-50 p-4 rounded-xl mb-3 border border-gray-100">
+              <div key={ride.id} className="bg-base-700/50 border border-base-600 p-4 rounded-xl mb-3">
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-gray-400">👤</span>
-                    <p className="font-semibold text-gray-800">{ride.passenger_name || 'Pasajero'}</p>
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">${ride.fare_estimate}</span>
+                    <span className="text-base-500">👤</span>
+                    <p className="font-semibold text-white">{ride.passenger_name || 'Pasajero'}</p>
+                    <span className="text-xs bg-accent-500/15 text-accent-300 px-2 py-0.5 rounded-full font-medium border border-accent-500/30">${ride.fare_estimate}</span>
                   </div>
                   <button
                     onClick={() => acceptRide(ride)}
-                    className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm shadow-md hover:shadow-lg hover:from-green-600 hover:to-emerald-700 transition-all active:scale-95"
+                    className="bg-gradient-to-r from-accent-500 to-accent-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm shadow-glow-accent hover:from-accent-400 hover:to-accent-500 transition-all active:scale-95"
                   >
                     Aceptar
                   </button>
                 </div>
-                <div className="space-y-1.5 ml-1 border-l-2 border-dashed border-gray-300 pl-3">
+                <div className="space-y-1.5 ml-1 border-l-2 border-dashed border-base-500 pl-3">
                   <div className="flex items-start gap-2">
-                    <span className="text-green-500 text-xs mt-0.5">🟢</span>
-                    <span className="text-xs text-gray-600 leading-tight">{ride.pickup_address || 'Sin dirección'}</span>
+                    <span className="text-accent-500 text-xs mt-0.5">🟢</span>
+                    <span className="text-xs text-base-400 leading-tight">{ride.pickup_address || 'Sin dirección'}</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <span className="text-red-500 text-xs mt-0.5">🔴</span>
-                    <span className="text-xs text-gray-600 leading-tight">{ride.dropoff_address || 'Sin dirección'}</span>
+                    <span className="text-xs text-base-400 leading-tight">{ride.dropoff_address || 'Sin dirección'}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 mt-2 ml-1">
-                  <span className="text-xs text-gray-400">{ride.payment_method === 'cash' ? '💵 Efectivo' : '📱 Transferencia'}</span>
+                  <span className="text-xs text-base-500">{ride.payment_method === 'cash' ? '💵 Efectivo' : '📱 Transferencia'}</span>
                 </div>
               </div>
             ))}
@@ -219,37 +218,37 @@ export default function DriverApp() {
         )}
 
         {activeRide && (
-          <div className="absolute bottom-0 left-0 right-0 bg-white p-5 rounded-t-3xl shadow-2xl z-10">
+          <div className="absolute bottom-0 left-0 right-0 card-voxa rounded-t-3xl p-5 z-10">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-lg text-gray-800">Viaje activo</h3>
+              <h3 className="font-bold text-lg text-white">Viaje activo</h3>
               <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                activeRide.status === 'accepted' ? 'bg-yellow-100 text-yellow-700' :
-                activeRide.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100'
+                activeRide.status === 'accepted' ? 'bg-yellow-500/15 text-yellow-400' :
+                activeRide.status === 'in_progress' ? 'bg-primary-500/15 text-primary-300' : 'bg-base-600 text-base-300'
               }`}>
                 {activeRide.status === 'accepted' ? 'En camino' :
                  activeRide.status === 'in_progress' ? 'En viaje' : activeRide.status}
               </span>
             </div>
 
-            <div className="bg-gray-50 rounded-xl p-4 space-y-3 text-sm mb-4">
+            <div className="bg-base-700/50 border border-base-600 rounded-xl p-4 space-y-3 text-sm mb-4">
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
-                  <span className="text-gray-400">👤</span>
-                  <span className="text-gray-500">Pasajero</span>
+                  <span className="text-base-500">👤</span>
+                  <span className="text-base-500">Pasajero</span>
                 </div>
-                <span className="font-semibold text-gray-800">{activeRide.passenger_name || 'Pasajero'}</span>
+                <span className="font-semibold text-white">{activeRide.passenger_name || 'Pasajero'}</span>
               </div>
               <div className="flex justify-between items-start">
-                <span className="text-gray-500 shrink-0">📍 Origen</span>
-                <span className="text-right max-w-[60%] text-gray-700">{activeRide.pickup_address}</span>
+                <span className="text-base-500 shrink-0">📍 Origen</span>
+                <span className="text-right max-w-[60%] text-base-300">{activeRide.pickup_address}</span>
               </div>
               <div className="flex justify-between items-start">
-                <span className="text-gray-500 shrink-0">🏁 Destino</span>
-                <span className="text-right max-w-[60%] text-gray-700">{activeRide.dropoff_address}</span>
+                <span className="text-base-500 shrink-0">🏁 Destino</span>
+                <span className="text-right max-w-[60%] text-base-300">{activeRide.dropoff_address}</span>
               </div>
-              <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                <span className="font-semibold text-gray-700">Tarifa</span>
-                <span className="text-lg font-bold text-emerald-600">${activeRide.fare_estimate}</span>
+              <div className="flex justify-between items-center pt-2 border-t border-base-600">
+                <span className="font-semibold text-white">Tarifa</span>
+                <span className="text-lg font-bold text-accent-400">${activeRide.fare_estimate}</span>
               </div>
             </div>
 
@@ -257,7 +256,7 @@ export default function DriverApp() {
               {activeRide.status === 'accepted' && (
                 <button
                   onClick={startRide}
-                  className="flex-1 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-xl hover:from-blue-700 hover:to-indigo-700 transition-all active:scale-[0.98]"
+                  className="flex-1 py-3.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl font-bold text-sm shadow-glow hover:from-primary-400 hover:to-primary-500 transition-all active:scale-[0.98]"
                 >
                   Iniciar viaje
                 </button>
@@ -265,7 +264,7 @@ export default function DriverApp() {
               {activeRide.status === 'in_progress' && (
                 <button
                   onClick={completeRide}
-                  className="flex-1 py-3.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-xl hover:from-green-600 hover:to-emerald-700 transition-all active:scale-[0.98]"
+                  className="flex-1 py-3.5 bg-gradient-to-r from-accent-500 to-accent-600 text-white rounded-xl font-bold text-sm shadow-glow-accent hover:from-accent-400 hover:to-accent-500 transition-all active:scale-[0.98]"
                 >
                   Completar viaje
                 </button>
@@ -276,23 +275,23 @@ export default function DriverApp() {
       </div>
 
       {showEarnings && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="card-voxa rounded-3xl p-6 w-full max-w-sm">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-lg">Ganancias de hoy</h3>
-              <button onClick={() => setShowEarnings(false)} className="text-gray-500">✕</button>
+              <h3 className="font-bold text-lg text-white">Ganancias de hoy</h3>
+              <button onClick={() => setShowEarnings(false)} className="text-base-500 hover:text-white">✕</button>
             </div>
             <div className="text-center py-6">
-              <div className="text-4xl font-bold text-green-600 mb-2">
+              <div className="text-4xl font-bold text-accent-400 mb-2">
                 ${earnings.total_earnings}
               </div>
-              <div className="text-gray-500">
+              <div className="text-base-500">
                 {earnings.total_rides} viajes realizados
               </div>
             </div>
             <button
               onClick={() => setShowEarnings(false)}
-              className="w-full bg-gray-100 py-3 rounded-lg font-medium"
+              className="w-full bg-base-700 hover:bg-base-600 py-3 rounded-xl font-medium text-white transition"
             >
               Cerrar
             </button>

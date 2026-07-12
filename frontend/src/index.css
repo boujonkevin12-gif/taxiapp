@@ -11,16 +11,53 @@
 html, body, #root {
   height: 100%;
   width: 100%;
+  background-color: #08080c;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 .leaflet-container {
   height: 100%;
   width: 100%;
   z-index: 0;
+  background: #131320 !important;
+}
+
+/* Mapa en tono oscuro (invierte el tile de OSM para que combine con el tema) */
+.map-dark .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(190deg) brightness(0.95) contrast(0.9) saturate(0.6);
+}
+
+/* Scrollbars discretos en tema oscuro */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: #33334f;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Animación pulso para pickup/dropoff cuando hay viaje activo */
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 4px currentColor22, 0 0 0 0 currentColor44; }
+  50% { box-shadow: 0 0 0 4px currentColor22, 0 0 0 12px currentColor11; }
+}
+.pulse-dot {
+  animation: pulse-dot 2s infinite;
 }
 
 @layer utilities {
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);
+  }
+  .card-voxa {
+    @apply bg-base-800/95 backdrop-blur-xl border border-base-600/60 shadow-2xl;
   }
 }
