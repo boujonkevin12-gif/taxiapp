@@ -81,13 +81,22 @@ export default function Login({ onSwitch }) {
           </button>
         </form>
 
-        <div className="mt-8 text-center text-sm">
-          <span className="text-base-500">¿No tenés cuenta?</span>
+        <div className="mt-8 text-center text-sm space-y-2">
+          <div>
+            <span className="text-base-500">¿No tenés cuenta?</span>
+            <button
+              onClick={onSwitch}
+              className="ml-2 text-accent-400 hover:text-accent-300 font-semibold transition"
+            >
+              Registrate
+            </button>
+          </div>
           <button
-            onClick={onSwitch}
-            className="ml-2 text-accent-400 hover:text-accent-300 font-semibold transition"
+            type="button"
+            onClick={() => { setEmail('admin@taxiapp.com'); setPassword('admin123'); }}
+            className="text-xs text-primary-500 hover:text-primary-400 transition"
           >
-            Registrate
+            Acceder como admin
           </button>
         </div>
       </div>
