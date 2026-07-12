@@ -4,7 +4,7 @@ import { api } from '../services/api';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 
-const GEO_KEY = import.meta.env.VITE_GEOAPIFY_KEY;
+const GEO_KEY = import.meta.env.VITE_GEOAPIFY_KEY || '89bd19294b5b4b1687157be957e39e96';
 
 function cleanAddress(r) {
   if (r.formatted) return r.formatted;
