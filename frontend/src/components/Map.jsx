@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
+const LOC_KEY = import.meta.env.VITE_LOCATIONIQ_KEY || 'pk.b765fe6c918e50e9760a278ff7070aab';
+
 const defaultIcon = L.icon({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -105,8 +107,8 @@ export default function Map({
         zoomControl={false}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://locationiq.com">LocationIQ</a>'
+          url={`https://tiles.locationiq.com/v3/street/r/{z}/{x}/{y}.png?key=${LOC_KEY}`}
         />
         <MapUpdater center={center} zoom={zoom} />
         <MapClickHandler />
