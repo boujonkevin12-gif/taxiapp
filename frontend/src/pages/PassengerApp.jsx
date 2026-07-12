@@ -4,27 +4,27 @@ import { api } from '../services/api';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 
-const LOC_KEY = import.meta.env.VITE_LOCATIONIQ_KEY || 'pk.b765fe6c918e50e9760a278ff7070aab';
+const GEO_KEY = import.meta.env.VITE_GEOAPIFY_KEY || '89bd19294b5b4b1687157be957e39e96';
 
 async function geocode(query) {
-  if (!query || query.length < 3 || !LOC_KEY) return [];
+  if (!query || query.length < 3 || !GEO_KEY) return [];
   const text = query.toLowerCase().includes('concepción') ? query : `${query}, Concepción del Uruguay`;
   const params = new URLSearchParams({
-    q: text,
-    key: LOC_KEY,
+    text,
+    apiKey: GEO_KEY,
     limit: '8',
-    countrycodes: 'ar',
-    dedupe: '1',
+    country: 'argentina',
+    filter: 'circle:-58.2322,-32.4826,20000',
+    bias: 'proximity:-58.2322,-32.4826',
     format: 'json',
   });
   try {
-    const res = await fetch(`https://us1.locationiq.com/v1/search?${params}`);
+    const res = await fetch(`https://api.geoapify.com/v1/geocode/search?${params}`);
     const data = await res.json();
-    if (data.error) return [];
-    return (data || []).map(r => ({
-      lat: parseFloat(r.lat),
-      lng: parseFloat(r.lon),
-      display: r.display_name,
+    return (data.results || []).map(r => ({
+      lat: r.lat,
+      lng: r.lon,
+      display: r.formatted || r.address_line1 || `${r.lat}, ${r.lon}`,
     }));
   } catch {
     return [];
@@ -32,18 +32,20 @@ async function geocode(query) {
 }
 
 async function reverseGeocode(lat, lng) {
-  if (!LOC_KEY) return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  if (!GEO_KEY) return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
   const params = new URLSearchParams({
     lat: lat.toString(),
     lon: lng.toString(),
-    key: LOC_KEY,
+    apiKey: GEO_KEY,
     format: 'json',
   });
   try {
-    const res = await fetch(`https://us1.locationiq.com/v1/reverse?${params}`);
+    const res = await fetch(`https://api.geoapify.com/v1/geocode/reverse?${params}`);
     const data = await res.json();
-    if (data.error) return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-    return data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    if (data.results && data.results[0]) {
+      return data.results[0].formatted || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    }
+    return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
   } catch {
     return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
   }
